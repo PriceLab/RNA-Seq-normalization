@@ -1,6 +1,6 @@
-# test_rnaSeqNormalization
+# test_rnaSeqNormalizer
 #------------------------------------------------------------------------------------------------------------------------
-library(rnaSeqNormalization)
+library(rnaSeqNormalizer)
 library(RUnit)
 #------------------------------------------------------------------------------------------------------------------------
 runTests <- function()
@@ -14,9 +14,9 @@ test_ctor <- function()
 {
    message(sprintf("--- test_ctor"))
 
-   mtx <- get(load(system.file(package="rnaSeqNormalization", "extdata", "mtx.mayoTcx.100x300.RData")))
-   normalizer <- rnaSeqNormalization(mtx)
-   checkTrue(is(normalizer) == "rnaSeqNormalization")
+   mtx <- get(load(system.file(package="rnaSeqNormalizer", "extdata", "mtx.mayoTcx.100x300.RData")))
+   normalizer <- rnaSeqNormalizer(mtx)
+   checkTrue(is(normalizer) == "rnaSeqNormalizer")
 
 } # test_ctor
 #------------------------------------------------------------------------------------------------------------------------
@@ -24,8 +24,8 @@ test_basic <- function()
 {
    message(sprintf("--- test_basic"))
 
-   mtx <- get(load(system.file(package="rnaSeqNormalization", "extdata", "mtx.mayoTcx.100x300.RData")))
-   normalizer <- rnaSeqNormalization(mtx)
+   mtx <- get(load(system.file(package="rnaSeqNormalizer", "extdata", "mtx.mayoTcx.100x300.RData")))
+   normalizer <- rnaSeqNormalizer(mtx)
    mtx.norm <- normalize(normalizer)
    checkEqualsNumeric(fivenum(mtx.norm), c(-3.59, -0.62, 0.028, 0.66, 3.23), tol=1e-2)
    checkEquals(dim(mtx), dim(mtx.norm))
@@ -36,7 +36,7 @@ test_basic <- function()
 #------------------------------------------------------------------------------------------------------------------------
 explore_transformation <- function()
 {
-   mtx.all <- get(load(system.file(package="rnaSeqNormalization", "extdata", "mtx.mayoTcx.100x300.RData")))
+   mtx.all <- get(load(system.file(package="rnaSeqNormalizer", "extdata", "mtx.mayoTcx.100x300.RData")))
    mtx <- mtx.all[1:5, 1:8]
    rownames(mtx) <- paste("gene.", 1:5, sep="")
    minValue <- min(mtx[mtx > 0])

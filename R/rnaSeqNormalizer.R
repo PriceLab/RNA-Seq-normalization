@@ -1,13 +1,13 @@
 #' @importFrom methods new
 #'
-#' @title rnaSeqNormalization
+#' @title rnaSeqNormalizer
 #------------------------------------------------------------------------------------------------------------------------
-#' @name rnaSeqNormalization-class
-#' @rdname rnaSeqNormalization-class
-#' @aliases rnaSeqNormalization
+#' @name rnaSeqNormalizer-class
+#' @rdname rnaSeqNormalizer-class
+#' @aliases rnaSeqNormalizer
 #'
 
-.rnaSeqNormalization <- setClass ("rnaSeqNormalization",
+.rnaSeqNormalizer <- setClass ("rnaSeqNormalizer",
                           representation = representation(
                              mtx="matrix"
                              )
@@ -17,12 +17,12 @@
 setGeneric('normalize', signature='obj', function(obj) standardGeneric('normalize'))
 setGeneric('getNormalizedMatrix',  signature='obj', function(obj) standardGeneric('getNormalizedMatrix'))
 #------------------------------------------------------------------------------------------------------------------------
-#' Define an object of class rnaSeqNormalization
+#' Define an object of class rnaSeqNormalizer
 #'
 #' @description
 #' Cory, Michael and Max brewed up this method, here packaged up for easy reuse.
 #'
-#' @rdname rnaSeqNormalization-class
+#' @rdname rnaSeqNormalizer-class
 #'
 #' @param mtx a matix in "raw" form
 #'
@@ -31,12 +31,12 @@ setGeneric('getNormalizedMatrix',  signature='obj', function(obj) standardGeneri
 #' @export
 #'
 #'
-rnaSeqNormalization <- function(mtx)
+rnaSeqNormalizer <- function(mtx)
 {
    stopifnot(is.matrix(mtx))
    stopifnot(all(mtx >= 0))
 
-   .rnaSeqNormalization(mtx=mtx)
+   .rnaSeqNormalizer(mtx=mtx)
 
 } # ctor
 #------------------------------------------------------------------------------------------------------------------------
@@ -45,29 +45,29 @@ rnaSeqNormalization <- function(mtx)
 #' @rdname show
 #' @aliases show
 #'
-#' @param obj An object of class rnaSeqNormalization
+#' @param obj An object of class rnaSeqNormalizer
 #'
 #' @export
 
-setMethod('show', 'rnaSeqNormalization',
+setMethod('show', 'rnaSeqNormalizer',
 
     function(object) {
-       cat(sprintf ('--- rnaSeqNormalization'), '\n', sep='')
+       cat(sprintf ('--- rnaSeqNormalizer'), '\n', sep='')
        cat(sprintf("matrix dimensions: %d x %d", nrow(object@mtx), ncol(object@mtx)))
        cat("\n")
        })
 
 #------------------------------------------------------------------------------------------------------------------------
-#' do the normalization
+#' do the normalizer
 #'
 #' @rdname normalize
 #' @aliases normalize
 #'
-#' @param obj An object of class rnaSeqNormalization
+#' @param obj An object of class rnaSeqNormalizer
 #'
 #' @export
 
-setMethod('normalize', 'rnaSeqNormalization',
+setMethod('normalize', 'rnaSeqNormalizer',
 
    function(obj) {
       mtx <- obj@mtx
@@ -87,11 +87,11 @@ setMethod('normalize', 'rnaSeqNormalization',
 #' @rdname getNormalizedMatrix
 #' @aliases getNormalizedMatrix
 #'
-#' @param obj An object of class rnaSeqNormalization
+#' @param obj An object of class rnaSeqNormalizer
 #'
 #' @export
 
-setMethod('getNormalizedMatrix', 'rnaSeqNormalization',
+setMethod('getNormalizedMatrix', 'rnaSeqNormalizer',
 
    function(obj) {
       invisible(obj@mtx)

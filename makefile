@@ -6,16 +6,16 @@ vig:
 	R -e "devtools::build_vignettes()"
 
 build:
-	(cd ..; R CMD build --no-build-vignettes rnaSeqNormalization)
+	(cd ..; R CMD build --no-build-vignettes rnaSeqNormalizer)
 
 install:
-	(cd ..; R CMD INSTALL --no-test-load rnaSeqNormalization)
+	(cd ..; R CMD INSTALL --no-test-load rnaSeqNormalizer)
 
 check:
-	(cd ..; R CMD check `ls -t rnaSeqNormalization_* | head -1`)
+	(cd ..; R CMD check `ls -t rnaSeqNormalizer_* | head -1`)
 
 biocCheck:
-	(cd ..; R CMD BiocCheck `ls -t rnaSeqNormalization_* | head -1`)
+	(cd ..; R CMD BiocCheck `ls -t rnaSeqNormalizer_* | head -1`)
 
 
 test:
