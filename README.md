@@ -1,6 +1,6 @@
 # rnaSeqNormalization
-An evolving one-stop-shop for Cory's RNA-seq preparations.
+## An evolving one-stop-shop for Cory's RNA-seq preparations.
 
-### See vignettes (aka "articles") for working examples.
+#### See vignettes (aka "articles") for working examples.
 
 
