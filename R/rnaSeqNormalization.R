@@ -14,7 +14,7 @@
                             )
 
 #------------------------------------------------------------------------------------------------------------------------
-setGeneric('normalize', signature='obj', function(obj) standardGeneric('normalize')
+setGeneric('normalize', signature='obj', function(obj) standardGeneric('normalize'))
 setGeneric('getNormalizedMatrix',  signature='obj', function(obj) standardGeneric('getNormalizedMatrix'))
 #------------------------------------------------------------------------------------------------------------------------
 #' Define an object of class rnaSeqNormalization
@@ -72,11 +72,13 @@ setMethod('normalize', 'rnaSeqNormalization',
    function(obj) {
       mtx <- obj@mtx
       minValue <- min(mtx[mtx > 0])
+      if(minValue == 0)
+         minValue <- .Machine$double.eps
       mtx.1 <- mtx + minValue
-      mtx.2 <- log10(mtx)
+      mtx.2 <- log10(mtx.1)
       mtx.3 <- t(scale(t(mtx.2)))
       means <- apply(mtx.2, 2, mean)
-      invisible(obj@mtx)
+      invisible(mtx.3)
       })
 
 #------------------------------------------------------------------------------------------------------------------------

@@ -6,6 +6,7 @@ library(RUnit)
 runTests <- function()
 {
    test_ctor()
+   test_basic()
 
 } # runTests
 #------------------------------------------------------------------------------------------------------------------------
@@ -15,8 +16,23 @@ test_ctor <- function()
 
    mtx <- get(load(system.file(package="rnaSeqNormalization", "extdata", "mtx.mayoTcx.100x300.RData")))
    normalizer <- rnaSeqNormalization(mtx)
+   checkTrue(is(normalizer) == "rnaSeqNormalization")
 
 } # test_ctor
+#------------------------------------------------------------------------------------------------------------------------
+test_basic <- function()
+{
+   message(sprintf("--- test_basic"))
+
+   mtx <- get(load(system.file(package="rnaSeqNormalization", "extdata", "mtx.mayoTcx.100x300.RData")))
+   normalizer <- rnaSeqNormalization(mtx)
+   mtx.norm <- normalize(normalizer)
+   checkEqualsNumeric(fivenum(mtx.norm), c(-3.59, -0.62, 0.028, 0.66, 3.23), tol=1e-2)
+   checkEquals(dim(mtx), dim(mtx.norm))
+   checkEquals(rownames(mtx), rownames(mtx.norm))
+   checkEquals(colnames(mtx), colnames(mtx.norm))
+
+} # test_basic
 #------------------------------------------------------------------------------------------------------------------------
 explore_transformation <- function()
 {
