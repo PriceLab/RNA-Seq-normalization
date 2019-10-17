@@ -7,7 +7,7 @@ To install this package:
 
 ```
 R> library(devtools)
-R> install_github("priceLab/rnaSeqNormalizer
+R> install_github("priceLab/rnaSeqNormalizer")
 ```
 
 We will extend and enhance this package to accomodate a growing number
