@@ -1,0 +1,68 @@
+---
+title: "Introduction: a simple demo"
+author: "Paul Shannon"
+package: rnaSeqNormalizer
+date: "`r Sys.Date()`"
+output:
+   BiocStyle::html_document
+vignette: >
+  %\VignetteIndexEntry{"Introduction: a simple demo"}
+  %\VignetteEngine{knitr::rmarkdown}
+  %\VignetteEncoding{UTF-8}
+---
+
+<style>
+.main-container { width: 1200px; max-width:2800px;}
+</style>
+
+
+```{r setup, include = FALSE}
+options(width=120)
+knitr::opts_chunk$set(
+   collapse = TRUE,
+   eval=interactive(),
+   echo=TRUE,
+   comment = "#>"
+)
+```
+
+
+# Overview
+
+RNA-seq data comes from many sources in many forms.  The goal of this package is to collect
+a full bag of tricks and techniques to transform that variety into our (that is, Cory Funk's)
+preferred standard form.
+
+# Load the libraries we need
+
+```{r loadLibraries,  results='hide'}
+library(rnaSeqNormalizer)
+library(RUnit)
+```
+
+Create an instance of the normalizer, supplying it with a small example expression matrix.  We expect
+that it will have gene identifiers as row names and sample identifiers as column names.
+
+```{r create, results='hide'}
+mtx <- get(load(system.file(package="rnaSeqNormalization", "extdata", "mtx.mayoTcx.100x300.RData")))
+normalizer <- rnaSeqNormalization(mtx)
+```
+
+Invoke the normalization
+
+```{r run, results='show'}
+mtx.norm <- normalize(normalizer)
+checkEqualsNumeric(fivenum(mtx.norm), c(-3.59, -0.62, 0.028, 0.66, 3.23), tol=1e-2)
+checkEquals(dim(mtx), dim(mtx.norm))
+checkEquals(rownames(mtx), rownames(mtx.norm))
+checkEquals(colnames(mtx), colnames(mtx.norm))
+```
+
+
+
+# Session Info
+
+```{r sessionInfo}
+sessionInfo()
+````
+

@@ -1,6 +1,4 @@
-# TrenaProject
-an abstract base class for (usually) tissue-specifi trena projects,
-providing access to ChiP-seq, enhancer, transcript and open chromatin
-data.  TrenaProjectIGAP is an example subclass.
+# rnaSeqNormalization
+An evolving one-stop-shop for Cory's RNA-seq preparations.
 
 

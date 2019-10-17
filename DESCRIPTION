@@ -9,4 +9,6 @@ Description:  A collection of methods for reuse by Cory when building trena mode
 Depends: R (>= 3.5.0)
 License: Artistic-2.0
 Encoding: UTF-8
+VignetteBuilder:
+  knitr
 RoxygenNote: 6.1.1
