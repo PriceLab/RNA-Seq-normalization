@@ -1,9 +1,7 @@
-all:  docs install
+all:  roxy install
 
-docs:
+roxy:
 	R -e "devtools::document()"
-vig:
-	R -e "devtools::build_vignettes()"
 
 build:
 	(cd ..; R CMD build --no-build-vignettes rnaSeqNormalizer)
