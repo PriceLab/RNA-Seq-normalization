@@ -7,14 +7,24 @@
 \alias{rnaSeqNormalizer}
 \title{rnaSeqNormalizer}
 \usage{
-rnaSeqNormalizer(mtx)
+rnaSeqNormalizer(x, algorithm, duplicate.selection.statistic)
 }
 \arguments{
-\item{mtx}{a matix in "raw" form}
+\item{x}{a matix or data.frame of RNA-seq counts, rows are genes, columnns are mostly samples}
+
+\item{algorithm}{a character string, one of "log+scale", "asinh", "vsn}
+
+\item{duplicate.selection.statistc}{a character string, one of "median", "mean", "sd".  when
+duplicate geneSymbols are supplied or obtained from name mapping, the highest scoring of the
+duplicates, by the specified meansure, is kept; all others are dropped}
 }
 \value{
 A normalized matrix with dimensions, row and column names preserved
 }
 \description{
-Cory, Michael and Max brewed up this method, here packaged up for easy reuse.
+Cory, Michael and Max brewed up their preferred method, to which I have added
+asinh and vst (variance stabilizing normalization), here packaged up for easy reuse.
+ensg identifers are mapped to geneSymbols. duplicated geneSymbols are eliminated in
+favor of the one with the highest score according to the selected statistic:
+mean, median, sd (standard deviation)
 }

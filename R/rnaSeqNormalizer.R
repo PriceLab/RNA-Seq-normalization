@@ -2,6 +2,7 @@
 #' @importFrom AnnotationDbi keys select
 #' @import org.Hs.eg.db
 #' @import EnsDb.Hsapiens.v79
+#' @import DESeq
 #'
 #' @title rnaSeqNormalizer
 #------------------------------------------------------------------------------------------------------------------------
@@ -12,56 +13,62 @@
 
 .rnaSeqNormalizer <- setClass ("rnaSeqNormalizer",
                           representation = representation(
-                             mtx="matrix",
-                             tbl="data.frame"
+                             state="environment",
+                             algorithm="character",
+                             duplicate.selection.statistic="character",
+                             raw.data.type="character"
                              )
                             )
 
 #------------------------------------------------------------------------------------------------------------------------
 setGeneric('normalize', signature='obj', function(obj) standardGeneric('normalize'))
 setGeneric('getNormalizedMatrix', signature='obj', function(obj) standardGeneric('getNormalizedMatrix'))
-setGeneric('toGeneSymbolMatrix', signature='obj', function(obj, method) standardGeneric('toGeneSymbolMatrix'))
+setGeneric('standardizeToGeneSymbolMatrix', signature='obj', function(obj) standardGeneric('standardizeToGeneSymbolMatrix'))
 #------------------------------------------------------------------------------------------------------------------------
 #' Define an object of class rnaSeqNormalizer
 #'
 #' @description
-#' Cory, Michael and Max brewed up this method, here packaged up for easy reuse.
+#' Cory, Michael and Max brewed up their preferred method, to which I have added
+#' asinh and vst (variance stabilizing normalization), here packaged up for easy reuse.
+#' ensg identifers are mapped to geneSymbols. duplicated geneSymbols are eliminated in
+#' favor of the one with the highest score according to the selected statistic:
+#' mean, median, sd (standard deviation)
 #'
 #' @rdname rnaSeqNormalizer-class
 #'
-#' @param mtx a matix in "raw" form
+#' @param x a matix or data.frame of RNA-seq counts, rows are genes, columnns are mostly samples
+#' @param algorithm a character string, one of "log+scale", "asinh", "vsn
+#' @param duplicate.selection.statistc a character string, one of "median", "mean", "sd".  when
+#' duplicate geneSymbols are supplied or obtained from name mapping, the highest scoring of the
+#' duplicates, by the specified meansure, is kept; all others are dropped
 #'
 #' @return A normalized matrix with dimensions, row and column names preserved
 #'
 #' @export
 #'
 #'
-rnaSeqNormalizer <- function(mtx)
+rnaSeqNormalizer <- function(x, algorithm, duplicate.selection.statistic)
 {
-   stopifnot(is.matrix(mtx))
-   stopifnot(all(mtx >= 0))
+   stopifnot(algorithm %in% c("log+scale", "asinh", "vst"))
+   stopifnot(duplicate.selection.statistic %in% c("mean", "median", "sd"))
 
-   .rnaSeqNormalizer(mtx=mtx, tbl=data.frame())
+   state <- new.env(parent=emptyenv())
+   state$matrix <- matrix()
+   state$tbl <- data.frame()
 
-} # ctor
-#------------------------------------------------------------------------------------------------------------------------
-#' create object of class rnaSeqNormalizer, initializing with a data.frame
-#'
-#'
-#' @rdname data.frame.rnaSeqNormalizer
-#'
-#' @param mtx a matix in "raw" form
-#'
-#' @return A normalized matrix with dimensions, row and column names preserved
-#'
-#' @export
-#'
-#'
-data.frame.rnaSeqNormalizer <- function(tbl)
-{
-   stopifnot(is.data.frame(tbl))
+   if(is.matrix(x)){
+      raw.data.type <- "matrix"
+      state$matrix <- x
+      }
 
-   .rnaSeqNormalizer(mtx=matrix(), tbl=tbl)
+   if(is.data.frame(x)){
+      raw.data.type <- "data.frame"
+      state$tbl <- x
+      }
+
+   .rnaSeqNormalizer(state=state, algorithm=algorithm,
+                     duplicate.selection.statistic=duplicate.selection.statistic,
+                     raw.data.type=raw.data.type)
 
 } # ctor
 #------------------------------------------------------------------------------------------------------------------------
@@ -94,15 +101,19 @@ setMethod('show', 'rnaSeqNormalizer',
 #'
 #' @export
 
-setMethod('toGeneSymbolMatrix', 'rnaSeqNormalizer',
+setMethod('standardizeToGeneSymbolMatrix', 'rnaSeqNormalizer',
 
-   function(obj, method) {
-      browser()
-      tbl.class <- .categorizeDataFrame(obj@tbl)
-      switch(tbl.class,
-          "ensembl column 1": return(.transformEnsemblColumn1DataFrameToGeneSymbolMatrix(obj@tbl)),
-          stop(sprintf("no support yet for data frame of type '%s'"))
-          )
+   function(obj) {
+
+      if(obj@raw.data.type == "data.frame"){
+         tbl.class <- .categorizeDataFrame(obj@state$tbl)
+         stopifnot(tbl.class %in% c("ensembl column 1"))
+         if(tbl.class == "ensembl column 1")
+            obj@state$matrix <- .transformEnsemblColumn1DataFrameToGeneSymbolMatrix(obj@state$tbl)
+         }
+      if(obj@raw.data.type == "matrix"){
+         stop("no support yet for input matrices in standardizeGeneSymbolToMatrix")
+         }
       #mtx <- obj@mtx
       #minValue <- min(mtx[mtx > 0])
       #if(minValue == 0)
@@ -159,7 +170,7 @@ setMethod('toGeneSymbolMatrix', 'rnaSeqNormalizer',
 #------------------------------------------------------------------------------------------------------------------------
 .transformEnsemblColumn1DataFrameToGeneSymbolMatrix <- function(tbl)
 {
-   printf("--- .transformEnsemblColumn1DataFrameToGeneSymbolMatrix")
+   #printf("--- .transformEnsemblColumn1DataFrameToGeneSymbolMatrix")
 
    dim(tbl)
    mean <- apply(tbl[, -1], 1, mean)
@@ -169,7 +180,6 @@ setMethod('toGeneSymbolMatrix', 'rnaSeqNormalizer',
    tbl$median <- median
    tbl$sd <- sd
 
-   browser()
    ensg <- tbl[,1]
    tbl.map <- select(EnsDb.Hsapiens.v79, key=ensg,  columns=c("SYMBOL"),  keytype="GENEID")
    nas <- which(is.na(tbl.map$SYMBOL))
@@ -209,17 +219,57 @@ setMethod('toGeneSymbolMatrix', 'rnaSeqNormalizer',
 setMethod('normalize', 'rnaSeqNormalizer',
 
    function(obj) {
-      mtx <- obj@mtx
-      minValue <- min(mtx[mtx > 0])
-      if(minValue == 0)
-         minValue <- .Machine$double.eps
-      mtx.1 <- mtx + minValue
-      mtx.2 <- log10(mtx.1)
-      mtx.3 <- t(scale(t(mtx.2)))
-      means <- apply(mtx.2, 2, mean)
-      invisible(mtx.3)
+      mtx <- obj@state$matrix
+      if(obj@algorithm == "asinh")
+         return(.asinh.normalize(mtx))
+      if(obj@algorithm == "log+scale")
+         return(.logAndScale.normalize(mtx))
+      if(obj@algorithm == "vst")
+         return(.vst.normalize(mtx))
       })
 
+
+#------------------------------------------------------------------------------------------------------------------------
+.logAndScale.normalize <- function(mtx)
+{
+   minValue <- min(mtx[mtx > 0])
+   if(minValue == 0)
+      minValue <- .Machine$double.eps
+
+   mtx.1 <- mtx + minValue
+   mtx.2 <- log10(mtx.1)
+   mtx.3 <- t(scale(t(mtx.2)))
+   means <- apply(mtx.2, 2, mean)
+
+   mtx.3
+
+} # .logAndScale.normalize
+#------------------------------------------------------------------------------------------------------------------------
+.asinh.normalize <- function(mtx)
+{
+   asinh(mtx)
+
+} # .asinh.normalize
+#------------------------------------------------------------------------------------------------------------------------
+# from jim macdonald via alison paquqette: the variance statilizing transformation
+.vst.normalize <- function(mtx)
+{
+   if(is.numeric(mtx[1,1])){
+      warning("the vst algorithm needs a matrix of integer counts; converting...")
+      mtx.i <- matrix(data=as.integer(mtx), nrow=nrow(mtx))
+      colnames(mtx.i) <- colnames(mtx)
+      rownames(mtx.i) <- rownames(mtx)
+      mtx <- mtx.i
+      }
+
+   condition <- factor(rep("AD", ncol(mtx)))
+   countdata <- newCountDataSet(mtx, condition) # DESseq
+   countdata <- estimateSizeFactors(countdata)
+   cdsBlind <- DESeq::estimateDispersions(countdata, method="blind")
+   vstdata <- varianceStabilizingTransformation(cdsBlind)
+   exprs(vstdata)
+
+} # .vst.normalize
 #------------------------------------------------------------------------------------------------------------------------
 #' get the normalized matrix
 #'
