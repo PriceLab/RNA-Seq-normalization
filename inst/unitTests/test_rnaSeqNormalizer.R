@@ -6,8 +6,7 @@ library(RUnit)
 runTests <- function()
 {
    test_ctor()
-   test_basic.matrix()
-   test_basic.data.frame()
+   test_smallDataFrame()
 
 } # runTests
 #------------------------------------------------------------------------------------------------------------------------
@@ -15,8 +14,9 @@ test_ctor <- function()
 {
    message(sprintf("--- test_ctor"))
 
-   mtx <- get(load(system.file(package="rnaSeqNormalizer", "extdata", "mtx.mayoTcx.100x300.RData")))
-   normalizer <- rnaSeqNormalizer(mtx, algorithm="asinh", duplicate.selection.statistic="median")
+   file <- system.file(package="rnaSeqNormalizer", "extdata", "tbl.ensg.column.16x10.tsv")
+   tbl.small <- read.table(file, sep="\t", as.is=TRUE)
+   normalizer <- rnaSeqNormalizer(tbl.small, algorithm="asinh", duplicate.selection.statistic="median")
    checkTrue(is(normalizer) == "rnaSeqNormalizer")
 
 } # test_ctor
@@ -31,56 +31,51 @@ test_ctor <- function()
 #        * each is scored according to the chosen duplicate.selection.statistic parameter
 #        * only the highest-scoring is kept, other discarded
 #
-test_basic.data.frame <- function()
+test_smallDataFrame <- function()
 {
-   message(sprintf("--- test_basic.data.frame"))
+   message(sprintf("--- test_smallDataFrame"))
 
    file <- system.file(package="rnaSeqNormalizer", "extdata", "tbl.ensg.column.16x10.tsv")
    tbl.small <- read.table(file, sep="\t", as.is=TRUE)
    checkEquals(dim(tbl.small), c(16, 10))
-   normalizer <- rnaSeqNormalizer(tbl.small, algorithm="asinh", duplicate.selection.statistic="median")
-   standardizeToGeneSymbolMatrix(normalizer)
 
-   mtx.norm <- normalize(normalizer)
+    #------------------------------------------------------------
+    #   use asinh + median
+    #------------------------------------------------------------
+
+   normalizer <- rnaSeqNormalizer(tbl.small, algorithm="asinh", duplicate.selection.statistic="median")
+   mtx.norm <- getNormalizedMatrix(normalizer)
    fivenum(mtx.norm)
    checkEqualsNumeric(fivenum(mtx.norm), c(0.000000, 0.000000, 3.434929, 6.563849, 8.531491), tol=1e-2)
 
+    #------------------------------------------------------------
+    #   use asinh + sd
+    #------------------------------------------------------------
 
-   #normalizer <- data.frame.rnaSeqNormalizer(tbl.small)
-   #category <- rnaSeqNormalizer:::.categorizeDataFrame(tbl.small)
-   #checkEquals(category, "ensembl column 1")
-   #mtx <- rnaSeqNormalizer:::.transformEnsemblColumn1DataFrameToGeneSymbolMatrix(tbl.small)
-   #checkEquals(dim(mtx), c(12, 9))   # 4 ensgs eliminated, mapping to the same gene symbol
+   normalizer <- rnaSeqNormalizer(tbl.small, algorithm="asinh", duplicate.selection.statistic="sd")
+   mtx.norm <- getNormalizedMatrix(normalizer)
+   fivenum(mtx.norm)
+   checkEqualsNumeric(fivenum(mtx.norm), c(0.000000, 0.000000, 3.434929, 6.563849, 8.531491), tol=1e-2)
 
-
-   # mtx.norm <- normalize(normalizer)
-   # checkEqualsNumeric(fivenum(mtx.norm), c(-3.59, -0.62, 0.028, 0.66, 3.23), tol=1e-2)
-   # checkEquals(dim(mtx), dim(mtx.norm))
-   # checkEquals(rownames(mtx), rownames(mtx.norm))
-   # checkEquals(colnames(mtx), colnames(mtx.norm))
-
-} # test_basic.data.frame
+} # test_smallDataFrame
 #------------------------------------------------------------------------------------------------------------------------
-test_basic.matrix <- function()
-{
-   message(sprintf("--- test_basic.matrix"))
-
-   mtx <- get(load(system.file(package="rnaSeqNormalizer", "extdata", "mtx.mayoTcx.100x300.RData")))
-
-    #------------------------------------------------------------
-    #   use asinh
-    #------------------------------------------------------------
-
-   checkTrue(is.matrix(mtx))
-   normalizer <- rnaSeqNormalizer(mtx, algorithm="asinh", duplicate.selection.statistic="median")
-   mtx.norm <- normalize(normalizer)
-   checkEqualsNumeric(fivenum(mtx.norm), c(0.000000, 2.318597, 3.656305, 4.485816, 6.811666), tol=1e-2)
-
-   checkEquals(dim(mtx), dim(mtx.norm))
-   checkEquals(rownames(mtx), rownames(mtx.norm))
-   checkEquals(colnames(mtx), colnames(mtx.norm))
-
-} # test_basic
+# test_basic.matrix <- function()
+# {
+#    message(sprintf("--- test_basic.matrix"))
+#
+#    mtx <- get(load(system.file(package="rnaSeqNormalizer", "extdata", "mtx.mayoTcx.100x300.RData")))
+#
+#
+#    checkTrue(is.matrix(mtx))
+#    normalizer <- rnaSeqNormalizer(mtx, algorithm="asinh", duplicate.selection.statistic="median")
+#    mtx.norm <- normalize(normalizer)
+#    checkEqualsNumeric(fivenum(mtx.norm), c(0.000000, 2.318597, 3.656305, 4.485816, 6.811666), tol=1e-2)
+#
+#    checkEquals(dim(mtx), dim(mtx.norm))
+#    checkEquals(rownames(mtx), rownames(mtx.norm))
+#    checkEquals(colnames(mtx), colnames(mtx.norm))
+#
+# } # test_basic
 #------------------------------------------------------------------------------------------------------------------------
 explore_transformation <- function()
 {
@@ -172,3 +167,5 @@ create_testDataFrames <- function()
 #------------------------------------------------------------------------------------------------------------------------
 if(!interactive())
    runTests()
+
+

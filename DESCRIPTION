@@ -1,8 +1,8 @@
 Package: rnaSeqNormalizer
 Type: Package
 Title: rnaSeqNormalizer: Cory Funk's favorite methods
-Version: 1.0.7
-Date: 2019-11-04
+Version: 1.0.8
+Date: 2019-11-05
 Author: Cory Funk, Michael Wainberg, Max Robinson, Paul Shannon
 Maintainer: Paul Shannon<paul.thurmond.shannon@gmail.com>
 Description:  A collection of methods for reuse by Cory when building trena models

@@ -57,13 +57,15 @@ rnaSeqNormalizer <- function(x, algorithm, duplicate.selection.statistic)
    state$tbl <- data.frame()
 
    if(is.matrix(x)){
-      raw.data.type <- "matrix"
-      state$matrix <- x
+     stop(sprintf("rnaSeqNormalizer currently supports only data.frames with ENSG ids in the first column"))
       }
 
    if(is.data.frame(x)){
       raw.data.type <- "data.frame"
       state$tbl <- x
+      data.frame.type <- .categorizeDataFrame(x)
+      if(!data.frame.type == "ensembl column 1")
+         stop("rnaSeqNormalizer currently supports only data.frames with ENSG ids in the first column")
       }
 
    .rnaSeqNormalizer(state=state, algorithm=algorithm,
@@ -85,7 +87,7 @@ setMethod('show', 'rnaSeqNormalizer',
 
     function(object) {
        cat(sprintf ('--- rnaSeqNormalizer'), '\n', sep='')
-       cat(sprintf("matrix dimensions: %d x %d", nrow(object@mtx), ncol(object@mtx)))
+       cat(sprintf("data.frame dimensions: %d x %d", nrow(object@state$tbl), ncol(object@state$tbl)))
        cat("\n")
        })
 
@@ -109,20 +111,12 @@ setMethod('standardizeToGeneSymbolMatrix', 'rnaSeqNormalizer',
          tbl.class <- .categorizeDataFrame(obj@state$tbl)
          stopifnot(tbl.class %in% c("ensembl column 1"))
          if(tbl.class == "ensembl column 1")
-            obj@state$matrix <- .transformEnsemblColumn1DataFrameToGeneSymbolMatrix(obj@state$tbl)
+            obj@state$matrix <- .transformEnsemblColumn1DataFrameToGeneSymbolMatrix(obj@state$tbl,
+                                                                                    obj@duplicate.selection.statistic)
          }
       if(obj@raw.data.type == "matrix"){
          stop("no support yet for input matrices in standardizeGeneSymbolToMatrix")
          }
-      #mtx <- obj@mtx
-      #minValue <- min(mtx[mtx > 0])
-      #if(minValue == 0)
-      #   minValue <- .Machine$double.eps
-      #mtx.1 <- mtx + minValue
-      #mtx.2 <- log10(mtx.1)
-      #mtx.3 <- t(scale(t(mtx.2)))
-      #means <- apply(mtx.2, 2, mean)
-      #invisible(mtx.3)
       })
 
 #------------------------------------------------------------------------------------------------------------------------
@@ -168,7 +162,7 @@ setMethod('standardizeToGeneSymbolMatrix', 'rnaSeqNormalizer',
 
 } # .categorizeDataFrame
 #------------------------------------------------------------------------------------------------------------------------
-.transformEnsemblColumn1DataFrameToGeneSymbolMatrix <- function(tbl)
+.transformEnsemblColumn1DataFrameToGeneSymbolMatrix <- function(tbl, duplicate.selection.statistic)
 {
    #printf("--- .transformEnsemblColumn1DataFrameToGeneSymbolMatrix")
 
@@ -190,7 +184,7 @@ setMethod('standardizeToGeneSymbolMatrix', 'rnaSeqNormalizer',
    tbl$sym <- tbl.map$SYMBOL[indices]
    dup.syms <- which(duplicated(tbl$sym))
    length(dup.syms)
-   new.order <- order(tbl$sym, tbl$sd, decreasing=TRUE)
+   new.order <- order(tbl$sym, tbl[, duplicate.selection.statistic], decreasing=TRUE)
    tbl <- tbl[new.order,]
 
       # discard extra rows added because a single ENSEMBL id is mapped to multiple gene symbols
@@ -207,19 +201,22 @@ setMethod('standardizeToGeneSymbolMatrix', 'rnaSeqNormalizer',
 
 } # .transformEnsemblColumn1DataFrameToGeneSymbolMatrix
 #------------------------------------------------------------------------------------------------------------------------
-#' do the normalizer
+#' process according to algorithm and duplicate.selection.statistic
 #'
-#' @rdname normalize
-#' @aliases normalize
+#' @rdname getNormalizedMatrix
+#' @aliases getNormalizedMatrix
 #'
 #' @param obj An object of class rnaSeqNormalizer
 #'
 #' @export
 
-setMethod('normalize', 'rnaSeqNormalizer',
+setMethod('getNormalizedMatrix', 'rnaSeqNormalizer',
 
    function(obj) {
+
+      standardizeToGeneSymbolMatrix(obj)
       mtx <- obj@state$matrix
+
       if(obj@algorithm == "asinh")
          return(.asinh.normalize(mtx))
       if(obj@algorithm == "log+scale")
@@ -270,20 +267,4 @@ setMethod('normalize', 'rnaSeqNormalizer',
    exprs(vstdata)
 
 } # .vst.normalize
-#------------------------------------------------------------------------------------------------------------------------
-#' get the normalized matrix
-#'
-#' @rdname getNormalizedMatrix
-#' @aliases getNormalizedMatrix
-#'
-#' @param obj An object of class rnaSeqNormalizer
-#'
-#' @export
-
-setMethod('getNormalizedMatrix', 'rnaSeqNormalizer',
-
-   function(obj) {
-      invisible(obj@mtx)
-      })
-
 #------------------------------------------------------------------------------------------------------------------------

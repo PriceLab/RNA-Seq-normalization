@@ -4,7 +4,7 @@
 \name{getNormalizedMatrix,rnaSeqNormalizer-method}
 \alias{getNormalizedMatrix,rnaSeqNormalizer-method}
 \alias{getNormalizedMatrix}
-\title{get the normalized matrix}
+\title{process according to algorithm and duplicate.selection.statistic}
 \usage{
 \S4method{getNormalizedMatrix}{rnaSeqNormalizer}(obj)
 }
@@ -12,5 +12,5 @@
 \item{obj}{An object of class rnaSeqNormalizer}
 }
 \description{
-get the normalized matrix
+process according to algorithm and duplicate.selection.statistic
 }

@@ -2,7 +2,6 @@
 
 export(rnaSeqNormalizer)
 exportMethods(getNormalizedMatrix)
-exportMethods(normalize)
 exportMethods(show)
 exportMethods(standardizeToGeneSymbolMatrix)
 import(DESeq)
