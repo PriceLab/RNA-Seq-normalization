@@ -1,0 +1,95 @@
+---
+title: "Normalize AMP-AD Expression Files From Sage"
+author: "Paul Shannon"
+package: rnaSeqNormalizer
+date: "`r Sys.Date()`"
+output:
+   BiocStyle::html_document
+vignette: >
+  %\VignetteIndexEntry{"Sage AMP-AD Files"}
+  %\VignetteEngine{knitr::rmarkdown}
+  %\VignetteEncoding{UTF-8}
+---
+
+<style>
+.main-container { width: 1200px; max-width:2800px;}
+</style>
+
+
+```{r setup, include = FALSE}
+options(width=120)
+knitr::opts_chunk$set(
+   collapse = TRUE,
+   eval=TRUE,
+   echo=TRUE,
+   comment = "#>"
+)
+```
+
+
+# Overview
+
+Sage provides RNA-seq expression files from the AMP-AD consortium.  They appear to be
+in a standard format: tab-delimited, 4 summary lines, Ensembl identifiers in the first
+column.
+
+This vignette shows how to
+  - read a file into a data.frame
+  - perform some minor transformations on that data.frame to make it ready for
+    rnaSeqNormalizer
+  - choose parameters and perform the desired normalization
+  - do some visual exploration of the results
+
+# Load the libraries we need
+
+```{r loadLibraries,  results='hide'}
+library(rnaSeqNormalizer)
+```
+
+Create an instance of the normalizer, supplying it with a small example expression matrix.  We expect
+that it will have gene identifiers as row names and sample identifiers as column names.
+
+*Note* that the file used here, _ROSMAP_all_counts_matrix.txt_ is very large, and is *not* included
+in the package.   This example therefore, works verbatim only on my build system.  To reproduce
+this chunk of code, you must provide your own filepath variable.
+
+```{r create, results='hide'}
+filepath <- "~/github/rnaSeqNormalizer/inst/extdata/sage/ROSMAP_all_counts_matrix.txt"
+stopifnot(file.exists(filepath))
+tbl.mt <- read.table(filepath, sep="\t", as.is=TRUE, header=TRUE, nrow=-1)
+tbl.mt <- tbl.mt[-c(1:4),]   # remove first four lines, which have summary statistics
+colnames(tbl.mt)[1] <- "ensembl_id"   # give the first column the name we expect
+tbl.mt$ensembl_id <- sub("\\.[0-9]+", "", tbl.mt$ensembl_id)   # remove version suffixes from the ids
+```
+
+We demonstrate two normalizations.  The results are quite different.  First the "log+scale"
+normalization proposed by Max Robinson and Michael Wainberg.
+
+```{r log+scale, results='hide'}
+x <- rnaSeqNormalizer(tbl.mt, algorithm="log+scale", duplicate.selection.statistic="mean")
+mtx.1 <-  getNormalizedMatrix(x)
+fivenum(mtx.1)
+```
+
+Now use a standard Bioconductor algorithm using the DESeq package, *vst* (variance stabilization transformation)
+```{r vst, results='hide'}
+x <- rnaSeqNormalizer(tbl.mt, algorithm="vst", duplicate.selection.statistic="sd")
+mtx.2 <-  getNormalizedMatrix(x)
+fivenum(mtx.2)
+```
+
+Compare these two techniques:
+```{r hist1, results='show'}
+hist(as.numeric(mtx.1), main="log+scale")
+```
+```{r hist2, results='show'}
+hist(as.numeric(mtx.2), main="vst")
+```
+
+
+# Session Info
+
+```{r sessionInfo}
+sessionInfo()
+````
+

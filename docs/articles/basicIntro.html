@@ -31,7 +31,7 @@
       </button>
       <span class="navbar-brand">
         <a class="navbar-link" href="../index.html">rnaSeqNormalizer</a>
-        <span class="version label label-default" data-toggle="tooltip" data-placement="bottom" title="Released version">1.0.4</span>
+        <span class="version label label-default" data-toggle="tooltip" data-placement="bottom" title="Released version">1.0.11</span>
       </span>
     </div>
 
@@ -56,6 +56,9 @@
 <li>
       <a href="../articles/basicIntro.html">Introduction: a simple demo</a>
     </li>
+    <li>
+      <a href="../articles/sage.html">Normalize AMP-AD Expression Files From Sage</a>
+    </li>
   </ul>
 </li>
       </ul>
@@ -75,7 +78,7 @@
       <h1>Introduction: a simple demo</h1>
                         <h4 class="author">Paul Shannon</h4>
             
-            <h4 class="date">2019-10-17</h4>
+            <h4 class="date">2019-11-07</h4>
       
       
       <div class="hidden name"><code>basicIntro.Rmd</code></div>
@@ -97,20 +100,78 @@
 <a href="#load-the-libraries-we-need" class="anchor"></a>Load the libraries we need</h1>
 <div class="sourceCode"><pre class="sourceCode r"><code class="sourceCode r"><span class="kw"><a href="https://rdrr.io/r/base/library.html">library</a></span>(rnaSeqNormalizer)
 <span class="kw"><a href="https://rdrr.io/r/base/library.html">library</a></span>(RUnit)</code></pre></div>
-<p>Create an instance of the normalizer, supplying it with a small example expression matrix. We expect that it will have gene identifiers as row names and sample identifiers as column names.</p>
-<div class="sourceCode"><pre class="sourceCode r"><code class="sourceCode r">mtx &lt;-<span class="st"> </span><span class="kw"><a href="https://rdrr.io/r/base/get.html">get</a></span>(<span class="kw"><a href="https://rdrr.io/r/base/load.html">load</a></span>(<span class="kw"><a href="https://rdrr.io/r/base/system.file.html">system.file</a></span>(<span class="dt">package=</span><span class="st">"rnaSeqNormalization"</span>, <span class="st">"extdata"</span>, <span class="st">"mtx.mayoTcx.100x300.RData"</span>)))
-normalizer &lt;-<span class="st"> </span><span class="kw">rnaSeqNormalization</span>(mtx)</code></pre></div>
-<p>Invoke the normalization</p>
-<div class="sourceCode"><pre class="sourceCode r"><code class="sourceCode r">mtx.norm &lt;-<span class="st"> </span><span class="kw"><a href="../reference/normalize.html">normalize</a></span>(normalizer)
-<span class="kw"><a href="https://rdrr.io/pkg/RUnit/man/checkFuncs.html">checkEqualsNumeric</a></span>(<span class="kw"><a href="https://rdrr.io/r/stats/fivenum.html">fivenum</a></span>(mtx.norm), <span class="kw"><a href="https://rdrr.io/r/base/c.html">c</a></span>(<span class="op">-</span><span class="fl">3.59</span>, <span class="op">-</span><span class="fl">0.62</span>, <span class="fl">0.028</span>, <span class="fl">0.66</span>, <span class="fl">3.23</span>), <span class="dt">tol=</span><span class="fl">1e-2</span>)
-<span class="kw"><a href="https://rdrr.io/pkg/RUnit/man/checkFuncs.html">checkEquals</a></span>(<span class="kw"><a href="https://rdrr.io/r/base/dim.html">dim</a></span>(mtx), <span class="kw"><a href="https://rdrr.io/r/base/dim.html">dim</a></span>(mtx.norm))
-<span class="kw"><a href="https://rdrr.io/pkg/RUnit/man/checkFuncs.html">checkEquals</a></span>(<span class="kw"><a href="https://rdrr.io/r/base/colnames.html">rownames</a></span>(mtx), <span class="kw"><a href="https://rdrr.io/r/base/colnames.html">rownames</a></span>(mtx.norm))
-<span class="kw"><a href="https://rdrr.io/pkg/RUnit/man/checkFuncs.html">checkEquals</a></span>(<span class="kw"><a href="https://rdrr.io/r/base/colnames.html">colnames</a></span>(mtx), <span class="kw"><a href="https://rdrr.io/r/base/colnames.html">colnames</a></span>(mtx.norm))</code></pre></div>
+<p>Read in a small tsv file included in this package</p>
+<div class="sourceCode"><pre class="sourceCode r"><code class="sourceCode r">file &lt;-<span class="st"> </span><span class="kw"><a href="https://rdrr.io/r/base/system.file.html">system.file</a></span>(<span class="dt">package=</span><span class="st">"rnaSeqNormalizer"</span>, <span class="st">"extdata"</span>, <span class="st">"tbl.ensg.column.16x10.tsv"</span>)
+tbl.small &lt;-<span class="st"> </span><span class="kw"><a href="https://rdrr.io/r/utils/read.table.html">read.table</a></span>(file, <span class="dt">sep=</span><span class="st">"</span><span class="ch">\t</span><span class="st">"</span>, <span class="dt">as.is=</span><span class="ot">TRUE</span>)
+<span class="kw"><a href="https://rdrr.io/pkg/RUnit/man/checkFuncs.html">checkEquals</a></span>(<span class="kw"><a href="https://rdrr.io/r/base/dim.html">dim</a></span>(tbl.small), <span class="kw"><a href="https://rdrr.io/r/base/c.html">c</a></span>(<span class="dv">16</span>, <span class="dv">10</span>))
+<span class="co">#&gt; [1] TRUE</span>
+<span class="kw"><a href="https://rdrr.io/r/utils/head.html">head</a></span>(tbl.small)
+<span class="co">#&gt;        ensembl_id X11344_TCX X11316_TCX X11431_TCX X11341_TCX X11289_TCX X11327_TCX X11334_TCX X11480_TCX X11471_TCX</span>
+<span class="co">#&gt; 1 ENSG00000006659          0          0          0          0          0          0          0          0          0</span>
+<span class="co">#&gt; 2 ENSG00000167964       1014        964       1322       1219       1480        787        955       1779       2181</span>
+<span class="co">#&gt; 3 ENSG00000169814        430        326        388        636        169        185        213        188        111</span>
+<span class="co">#&gt; 4 ENSG00000196369        263        131        353        298         24         59        106         93         77</span>
+<span class="co">#&gt; 5 ENSG00000234465         93        127        174        154        167        161        111        122        179</span>
+<span class="co">#&gt; 6 ENSG00000235499          1          7          2         10          1          3          3          1          1</span></code></pre></div>
+<p>Use the “asinh” algorithm and use maximum median value to select among duplicated gene symbols sometimes produced in the mapping from ENSG ids.</p>
+<div class="sourceCode"><pre class="sourceCode r"><code class="sourceCode r">normalizer &lt;-<span class="st"> </span><span class="kw"><a href="../reference/rnaSeqNormalizer-class.html">rnaSeqNormalizer</a></span>(tbl.small, <span class="dt">algorithm=</span><span class="st">"asinh"</span>, <span class="dt">duplicate.selection.statistic=</span><span class="st">"median"</span>)
+mtx.asinh.median &lt;-<span class="st"> </span><span class="kw"><a href="../reference/getNormalizedMatrix.html">getNormalizedMatrix</a></span>(normalizer)
+<span class="kw"><a href="https://rdrr.io/r/stats/fivenum.html">fivenum</a></span>(mtx.asinh.median)
+<span class="co">#&gt; [1] 0.000000 0.000000 3.434929 6.563849 8.531491</span>
+<span class="kw"><a href="https://rdrr.io/r/utils/head.html">head</a></span>(mtx.asinh.median)
+<span class="co">#&gt;               X11344_TCX X11316_TCX X11431_TCX X11341_TCX X11289_TCX X11327_TCX X11334_TCX X11480_TCX X11471_TCX</span>
+<span class="co">#&gt; TRPV1           6.234415   6.206580   6.612043   6.948898  7.1869016  6.8394776  6.4677011   6.568080  6.6770850</span>
+<span class="co">#&gt; TOP1P1          0.000000   0.000000   0.000000   0.000000  1.4436355  0.8813736  0.8813736   0.000000  0.0000000</span>
+<span class="co">#&gt; SRGAP2B         6.265305   5.568359   6.559617   6.390243  3.8716348  4.7707564  5.3566085   5.225776  5.0369948</span>
+<span class="co">#&gt; RPL41           8.446771   7.724005   8.427269   8.364042  7.8119736  8.4189187  8.5314905   8.446341  7.7765352</span>
+<span class="co">#&gt; RP11-507J18.5   1.443635   0.000000   0.000000   1.818446  0.8813736  0.0000000  1.4436355   1.818446  0.8813736</span>
+<span class="co">#&gt; RP11-216N14.9   0.000000   0.000000   0.000000   0.000000  0.0000000  0.0000000  0.0000000   0.000000  0.0000000</span>
+<span class="kw"><a href="https://rdrr.io/r/graphics/hist.html">hist</a></span>(<span class="kw"><a href="https://rdrr.io/r/base/numeric.html">as.numeric</a></span>(mtx.asinh.median))</code></pre></div>
+<p><img src="basicIntro_files/figure-html/normalize-1.png" width="700"></p>
 </div>
 <div id="session-info" class="section level1">
 <h1 class="hasAnchor">
 <a href="#session-info" class="anchor"></a>Session Info</h1>
-<div class="sourceCode"><pre class="sourceCode r"><code class="sourceCode r"><span class="kw"><a href="https://rdrr.io/r/utils/sessionInfo.html">sessionInfo</a></span>()</code></pre></div>
+<div class="sourceCode"><pre class="sourceCode r"><code class="sourceCode r"><span class="kw"><a href="https://rdrr.io/r/utils/sessionInfo.html">sessionInfo</a></span>()
+<span class="co">#&gt; R version 3.6.1 (2019-07-05)</span>
+<span class="co">#&gt; Platform: x86_64-apple-darwin15.6.0 (64-bit)</span>
+<span class="co">#&gt; Running under: macOS Mojave 10.14.5</span>
+<span class="co">#&gt; </span>
+<span class="co">#&gt; Matrix products: default</span>
+<span class="co">#&gt; BLAS:   /Library/Frameworks/R.framework/Versions/3.6/Resources/lib/libRblas.0.dylib</span>
+<span class="co">#&gt; LAPACK: /Library/Frameworks/R.framework/Versions/3.6/Resources/lib/libRlapack.dylib</span>
+<span class="co">#&gt; </span>
+<span class="co">#&gt; locale:</span>
+<span class="co">#&gt; [1] en_US.UTF-8/en_US.UTF-8/en_US.UTF-8/C/en_US.UTF-8/en_US.UTF-8</span>
+<span class="co">#&gt; </span>
+<span class="co">#&gt; attached base packages:</span>
+<span class="co">#&gt; [1] parallel  stats4    stats     graphics  grDevices utils     datasets  methods   base     </span>
+<span class="co">#&gt; </span>
+<span class="co">#&gt; other attached packages:</span>
+<span class="co">#&gt;  [1] RUnit_0.4.32              rnaSeqNormalizer_1.0.11   DESeq_1.36.0              lattice_0.20-38          </span>
+<span class="co">#&gt;  [5] locfit_1.5-9.1            EnsDb.Hsapiens.v79_2.99.0 ensembldb_2.8.1           AnnotationFilter_1.8.0   </span>
+<span class="co">#&gt;  [9] GenomicFeatures_1.36.4    GenomicRanges_1.36.1      GenomeInfoDb_1.20.0       org.Hs.eg.db_3.8.2       </span>
+<span class="co">#&gt; [13] AnnotationDbi_1.46.1      IRanges_2.18.3            S4Vectors_0.22.1          Biobase_2.44.0           </span>
+<span class="co">#&gt; [17] BiocGenerics_0.30.0       BiocStyle_2.12.0         </span>
+<span class="co">#&gt; </span>
+<span class="co">#&gt; loaded via a namespace (and not attached):</span>
+<span class="co">#&gt;  [1] httr_1.4.1                  splines_3.6.1               bit64_0.9-7                 assertthat_0.2.1           </span>
+<span class="co">#&gt;  [5] BiocManager_1.30.9          blob_1.2.0                  GenomeInfoDbData_1.2.1      Rsamtools_2.0.3            </span>
+<span class="co">#&gt;  [9] yaml_2.2.0                  progress_1.2.2              pillar_1.4.2                RSQLite_2.1.2              </span>
+<span class="co">#&gt; [13] backports_1.1.5             digest_0.6.21               RColorBrewer_1.1-2          XVector_0.24.0             </span>
+<span class="co">#&gt; [17] htmltools_0.4.0             Matrix_1.2-17               XML_3.98-1.20               pkgconfig_2.0.3            </span>
+<span class="co">#&gt; [21] biomaRt_2.40.5              genefilter_1.66.0           bookdown_0.14               zlibbioc_1.30.0            </span>
+<span class="co">#&gt; [25] xtable_1.8-4                BiocParallel_1.18.1         tibble_2.1.3                annotate_1.62.0            </span>
+<span class="co">#&gt; [29] SummarizedExperiment_1.14.1 lazyeval_0.2.2              survival_2.44-1.1           magrittr_1.5               </span>
+<span class="co">#&gt; [33] crayon_1.3.4                memoise_1.1.0               evaluate_0.14               fs_1.3.1                   </span>
+<span class="co">#&gt; [37] MASS_7.3-51.4               tools_3.6.1                 prettyunits_1.0.2           hms_0.5.2                  </span>
+<span class="co">#&gt; [41] matrixStats_0.55.0          stringr_1.4.0               DelayedArray_0.10.0         Biostrings_2.52.0          </span>
+<span class="co">#&gt; [45] compiler_3.6.1              pkgdown_1.4.1               rlang_0.4.0                 grid_3.6.1                 </span>
+<span class="co">#&gt; [49] RCurl_1.95-4.12             bitops_1.0-6                rmarkdown_1.16              DBI_1.0.0                  </span>
+<span class="co">#&gt; [53] curl_4.2                    R6_2.4.0                    GenomicAlignments_1.20.1    knitr_1.25                 </span>
+<span class="co">#&gt; [57] rtracklayer_1.44.4          bit_1.1-14                  zeallot_0.1.0               rprojroot_1.3-2            </span>
+<span class="co">#&gt; [61] ProtGenerics_1.16.0         desc_1.2.0                  stringi_1.4.3               Rcpp_1.0.2                 </span>
+<span class="co">#&gt; [65] geneplotter_1.62.0          vctrs_0.2.0                 xfun_0.10</span></code></pre></div>
 </div>
   </div>
 

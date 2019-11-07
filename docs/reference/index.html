@@ -67,7 +67,7 @@
       </button>
       <span class="navbar-brand">
         <a class="navbar-link" href="../index.html">rnaSeqNormalizer</a>
-        <span class="version label label-default" data-toggle="tooltip" data-placement="bottom" title="Released version">1.0.4</span>
+        <span class="version label label-default" data-toggle="tooltip" data-placement="bottom" title="Released version">1.0.11</span>
       </span>
     </div>
 
@@ -91,6 +91,9 @@
   <ul class="dropdown-menu" role="menu">
     <li>
       <a href="../articles/basicIntro.html">Introduction: a simple demo</a>
+    </li>
+    <li>
+      <a href="../articles/sage.html">Normalize AMP-AD Expression Files From Sage</a>
     </li>
   </ul>
 </li>
@@ -133,13 +136,7 @@
         <td>
           <p><code><a href="getNormalizedMatrix.html">getNormalizedMatrix(<i>&lt;rnaSeqNormalizer&gt;</i>)</a></code> </p>
         </td>
-        <td><p>get the normalized matrix</p></td>
-      </tr><tr>
-        
-        <td>
-          <p><code><a href="normalize.html">normalize(<i>&lt;rnaSeqNormalizer&gt;</i>)</a></code> </p>
-        </td>
-        <td><p>do the normalizer</p></td>
+        <td><p>process according to algorithm and duplicate.selection.statistic</p></td>
       </tr><tr>
         
         <td>
@@ -152,6 +149,12 @@
           <p><code><a href="show.html">show(<i>&lt;rnaSeqNormalizer&gt;</i>)</a></code> </p>
         </td>
         <td><p>get a summary of the objects</p></td>
+      </tr><tr>
+        
+        <td>
+          <p><code><a href="toGeneSymbolMatrix.html">standardizeToGeneSymbolMatrix(<i>&lt;rnaSeqNormalizer&gt;</i>)</a></code> </p>
+        </td>
+        <td><p>convert data.frame to a geneSymbol matrix</p></td>
       </tr>
     </tbody>
     </table>

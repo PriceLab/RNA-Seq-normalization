@@ -20,12 +20,11 @@ vignette: >
 options(width=120)
 knitr::opts_chunk$set(
    collapse = TRUE,
-   eval=interactive(),
+   eval=TRUE,
    echo=TRUE,
    comment = "#>"
 )
 ```
-
 
 # Overview
 
@@ -35,27 +34,29 @@ preferred standard form.
 
 # Load the libraries we need
 
-```{r loadLibraries,  results='hide'}
+```{r loadLibraries,  echo=TRUE, results=FALSE, message=FALSE}
 library(rnaSeqNormalizer)
 library(RUnit)
 ```
 
-Create an instance of the normalizer, supplying it with a small example expression matrix.  We expect
-that it will have gene identifiers as row names and sample identifiers as column names.
+Read in a small tsv file included in this package
 
-```{r create, results='hide'}
-mtx <- get(load(system.file(package="rnaSeqNormalization", "extdata", "mtx.mayoTcx.100x300.RData")))
-normalizer <- rnaSeqNormalization(mtx)
-```
+```{r readFile, results='show'}
+file <- system.file(package="rnaSeqNormalizer", "extdata", "tbl.ensg.column.16x10.tsv")
+tbl.small <- read.table(file, sep="\t", as.is=TRUE)
+checkEquals(dim(tbl.small), c(16, 10))
+head(tbl.small)
+````
 
-Invoke the normalization
+Use the "asinh" algorithm and use maximum median value to select among duplicated gene symbols
+sometimes produced in the mapping from ENSG ids.
 
-```{r run, results='show'}
-mtx.norm <- normalize(normalizer)
-checkEqualsNumeric(fivenum(mtx.norm), c(-3.59, -0.62, 0.028, 0.66, 3.23), tol=1e-2)
-checkEquals(dim(mtx), dim(mtx.norm))
-checkEquals(rownames(mtx), rownames(mtx.norm))
-checkEquals(colnames(mtx), colnames(mtx.norm))
+```{r normalize, results='show'}
+normalizer <- rnaSeqNormalizer(tbl.small, algorithm="asinh", duplicate.selection.statistic="median")
+mtx.asinh.median <- getNormalizedMatrix(normalizer)
+fivenum(mtx.asinh.median)
+head(mtx.asinh.median)
+hist(as.numeric(mtx.asinh.median))
 ```
 
 
