@@ -125,7 +125,7 @@ setMethod('standardizeToGeneSymbolMatrix', 'rnaSeqNormalizer',
 .categorizeDataFrame <- function(tbl)
 {
      # create an id map data.frame to assocate ensembl gene ids with gene symbols
-
+   stopifnot("ensembl_id" %in% colnames(tbl))
    ensg <- tbl$ensembl_id
 
    tbl.map <- select(EnsDb.Hsapiens.v79, key=ensg,  columns=c("SYMBOL"),  keytype="GENEID")
@@ -181,7 +181,15 @@ setMethod('standardizeToGeneSymbolMatrix', 'rnaSeqNormalizer',
    indices <- match(tbl[,1], tbl.map$GENEID)
    length(indices)
    head(indices)
+   which(is.na(indices))
    tbl$sym <- tbl.map$SYMBOL[indices]
+   mapping.failures <- which(is.na(tbl$sym))
+
+   if(length(mapping.failures) > 0){
+      tbl$sym[mapping.failures] <- tbl[mapping.failures,1]
+      }
+
+   dim(tbl)
    dup.syms <- which(duplicated(tbl$sym))
    length(dup.syms)
    new.order <- order(tbl$sym, tbl[, duplicate.selection.statistic], decreasing=TRUE)
@@ -189,9 +197,10 @@ setMethod('standardizeToGeneSymbolMatrix', 'rnaSeqNormalizer',
 
       # discard extra rows added because a single ENSEMBL id is mapped to multiple gene symbols
    deleters <- which(duplicated(tbl$sym))
-   length(deleters)
-   if(length(deleters) > 0)
-     tbl <- tbl[-deleters,]
+   if(length(deleters) > 0){
+      tbl <- tbl[-deleters,]
+      }
+   dim(tbl)
    rownames(tbl) <- tbl$sym
 
    columns.to.delete <- c(1, match(c("mean", "median", "sd", "sym"), colnames(tbl)))
@@ -262,9 +271,8 @@ setMethod('getNormalizedMatrix', 'rnaSeqNormalizer',
    condition <- factor(rep("AD", ncol(mtx)))
    countdata <- newCountDataSet(mtx, condition) # DESseq
    countdata <- estimateSizeFactors(countdata)
-   cdsBlind <- DESeq::estimateDispersions(countdata, method="blind")
-   vstdata <- varianceStabilizingTransformation(cdsBlind)
-   exprs(vstdata)
+   mtx.vst <- DESeq::getVarianceStabilizedData(estimateDispersions(countdata, method="blind"))
+   mtx.vst
 
 } # .vst.normalize
 #------------------------------------------------------------------------------------------------------------------------
