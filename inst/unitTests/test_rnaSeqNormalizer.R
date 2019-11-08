@@ -7,6 +7,8 @@ runTests <- function()
 {
    test_ctor()
    test_smallDataFrame()
+   test_smallGTExMatrix()
+   test_smallGTExMatrix_duplicatedRowNames()
 
 } # runTests
 #------------------------------------------------------------------------------------------------------------------------
@@ -88,6 +90,53 @@ test_smallDataFrame <- function()
      })
 
 } # test_smallDataFrame.asinh
+#------------------------------------------------------------------------------------------------------------------------
+# tissue specific matrices from GTEx come as RNA-seq transcript counts, with geneSymbols already provided
+# in matrix rownames.  this test ensures that rnaSeqNormalizer handles them properly
+test_smallGTExMatrix <- function()
+{
+   message(sprintf("--- test_smallGTExMatrix"))
+   file <- system.file(package="rnaSeqNormalizer", "extdata", "mtx.gtex.example.RData")
+   checkTrue(file.exists(file))
+   mtx <- get(load(file))
+
+   normalizer <- rnaSeqNormalizer.gtex(mtx, algorithm="vst", duplicate.selection.statistic="median")
+   suppressWarnings(
+      mtx.vst.median <- getNormalizedMatrix(normalizer)
+      )
+
+   checkEquals(dim(mtx), c(100, 20))
+   checkEquals(dim(mtx.vst.median), c(100, 20))
+   checkEquals(rownames(mtx), rownames(mtx.vst.median))
+   checkEquals(colnames(mtx), colnames(mtx.vst.median))
+
+   checkEqualsNumeric(fivenum(mtx), c(0.00, 0.27, 4.95, 32.38, 597.50), , tolerance=1e-2)
+   checkEqualsNumeric(fivenum(mtx.vst.median), c(3.73, 3.73, 4.58, 5.75, 8.95), tolerance=1e-2)
+
+} # test_smallGTExMatrix
+#------------------------------------------------------------------------------------------------------------------------
+# tissue specific matrices from GTEx come as RNA-seq transcript counts, with geneSymbols already provided
+# in matrix rownames.  this test ensures that rnaSeqNormalizer handles them properly
+test_smallGTExMatrix_duplicatedRowNames <- function()
+{
+   message(sprintf("--- test_smallGTExMatrix_duplicatedRowNames"))
+
+   file <- system.file(package="rnaSeqNormalizer", "extdata", "mtx.gtex.blood.dupRowNames.RData")
+   checkTrue(file.exists(file))
+   mtx <- get(load(file))
+
+   normalizer <- rnaSeqNormalizer.gtex(mtx, algorithm="asinh", duplicate.selection.statistic="median")
+   mtx.asinh.median <- getNormalizedMatrix(normalizer)
+
+   checkEquals(dim(mtx), c(201, 20))
+   checkEquals(dim(mtx.asinh.median), c(199, 20))
+   checkEquals(sort(unique(rownames(mtx))), sort(unique(rownames(mtx.asinh.median))))
+   checkEquals(colnames(mtx), colnames(mtx.asinh.median))
+
+   checkEqualsNumeric(fivenum(mtx), c(0.00, 0.00, 0.27, 3.87, 4016.00), tolerance=1e-2)
+   checkEqualsNumeric(fivenum(mtx.asinh.median), c(0.00, 0.00, 0.29, 2.07, 8.99), tolerance=1e-2)
+
+} # test_smallGTExMatrix_duplicatedRowNames
 #------------------------------------------------------------------------------------------------------------------------
 demo.sage.matrix.1 <- function()
 {

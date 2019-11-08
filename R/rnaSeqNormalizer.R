@@ -72,7 +72,69 @@ rnaSeqNormalizer <- function(x, algorithm, duplicate.selection.statistic)
                      duplicate.selection.statistic=duplicate.selection.statistic,
                      raw.data.type=raw.data.type)
 
-} # ctor
+} # ctor: for data.frames with ensembl_id in first column
+#------------------------------------------------------------------------------------------------------------------------
+#' Define an object of class rnaSeqNormalizer from a GTEx matrix
+#'
+#' @description
+#' Cory, Michael and Max brewed up their preferred method, to which I have added
+#' asinh and vst (variance stabilizing normalization), here packaged up for easy reuse.
+#' ensg identifers are mapped to geneSymbols. duplicated geneSymbols are eliminated in
+#' favor of the one with the highest score according to the selected statistic:
+#' mean, median, sd (standard deviation)
+#'
+#' @rdname rnaSeqNormalizer.gtex
+#'
+#' @param x a matix or data.frame of RNA-seq counts, rows are genes, columnns are mostly samples
+#' @param algorithm a character string, one of "log+scale", "asinh", "vsn
+#' @param duplicate.selection.statistc a character string, one of "median", "mean", "sd".  when
+#' duplicate geneSymbols are supplied or obtained from name mapping, the highest scoring of the
+#' duplicates, by the specified meansure, is kept; all others are dropped
+#'
+#' @return A normalized matrix with dimensions, row and column names preserved
+#'
+#' @export
+#'
+#'
+rnaSeqNormalizer.gtex <- function(x, algorithm, duplicate.selection.statistic)
+{
+   stopifnot(algorithm %in% c("log+scale", "asinh", "vst"))
+   stopifnot(duplicate.selection.statistic %in% c("mean", "median", "sd"))
+   state <- new.env(parent=emptyenv())
+
+   state$tbl <- data.frame()
+
+   if(!is.matrix(x)){
+     stop(sprintf("rnaSeqNormalizer.gtex currently supports only matrices with geneSymbol rownames"))
+     }
+
+   raw.data.type <- "matrix"
+
+   if(any(duplicated(rownames(x)))){
+      mean <- apply(x, 1, mean)
+      median <- apply(x, 1, median)
+      sd <- apply(x, 1, sd)
+      x <- cbind(x, mean=mean, median=median, sd=sd)
+      new.order <- order(rownames(x), x[, duplicate.selection.statistic], decreasing=TRUE)
+      x <- x[new.order,]
+        # discard extra rows with duplicated geneSymbols, keeping the biggest by selection.statistic
+      dup.syms <- which(duplicated(rownames(x)))
+      if(length(dup.syms) > 0){
+         x <- x[-dup.syms,]
+         }
+      start.of.extra.columns <- grep("mean", colnames(x))
+      end.of.extra.columns <- grep("sd", colnames(x))
+      x <- x[, -(start.of.extra.columns:end.of.extra.columns)]
+      dim(x)
+      }
+
+   state$matrix <- x
+
+   .rnaSeqNormalizer(state=state, algorithm=algorithm,
+                     duplicate.selection.statistic=duplicate.selection.statistic,
+                     raw.data.type=raw.data.type)
+
+} # ctor: for data.frames with ensembl_id in first column
 #------------------------------------------------------------------------------------------------------------------------
 #' get a summary of the objects
 #'
@@ -223,7 +285,8 @@ setMethod('getNormalizedMatrix', 'rnaSeqNormalizer',
 
    function(obj) {
 
-      standardizeToGeneSymbolMatrix(obj)
+      if(obj@raw.data.type == "data.frame")
+         standardizeToGeneSymbolMatrix(obj)
       mtx <- obj@state$matrix
 
       if(obj@algorithm == "asinh")
