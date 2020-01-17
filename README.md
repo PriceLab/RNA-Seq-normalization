@@ -8,6 +8,7 @@ To install this package:
 ```
 R> library(devtools)
 R> biocGet("DESeq")
+R> biocGet("EnsDb.Hsapiens.v79")
 R> install_github("priceLab/rnaSeqNormalizer")
 ```
 

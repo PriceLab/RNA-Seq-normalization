@@ -63,9 +63,8 @@ rnaSeqNormalizer <- function(x, algorithm, duplicate.selection.statistic)
    if(is.data.frame(x)){
       raw.data.type <- "data.frame"
       state$tbl <- x
-      data.frame.type <- .categorizeDataFrame(x)
-      if(!data.frame.type == "ensembl column 1")
-         stop("rnaSeqNormalizer currently supports only data.frames with ENSG ids in the first column")
+      if(length(x$ensembl_id) != nrow(x))
+         stop("rnaSeqNormalizer currently supports only data.frames with ENSG ids in one (any) column")
       }
 
    .rnaSeqNormalizer(state=state, algorithm=algorithm,
@@ -170,11 +169,8 @@ setMethod('standardizeToGeneSymbolMatrix', 'rnaSeqNormalizer',
    function(obj) {
 
       if(obj@raw.data.type == "data.frame"){
-         tbl.class <- .categorizeDataFrame(obj@state$tbl)
-         stopifnot(tbl.class %in% c("ensembl column 1"))
-         if(tbl.class == "ensembl column 1")
-            obj@state$matrix <- .transformEnsemblColumn1DataFrameToGeneSymbolMatrix(obj@state$tbl,
-                                                                                    obj@duplicate.selection.statistic)
+         obj@state$matrix <- .transformEnsemblColumn1DataFrameToGeneSymbolMatrix(obj@state$tbl,
+                                                                                 obj@duplicate.selection.statistic)
          }
       if(obj@raw.data.type == "matrix"){
          stop("no support yet for input matrices in standardizeGeneSymbolToMatrix")
@@ -189,38 +185,18 @@ setMethod('standardizeToGeneSymbolMatrix', 'rnaSeqNormalizer',
      # create an id map data.frame to assocate ensembl gene ids with gene symbols
    stopifnot("ensembl_id" %in% colnames(tbl))
    ensg <- tbl$ensembl_id
+     # remove any trailing ensg version numbers, e.g., ENSG00000279457.3 -> ENSG00000279457
+   ensg <- sub("\\..*$", "", ensg)
 
    tbl.map <- select(EnsDb.Hsapiens.v79, key=ensg,  columns=c("SYMBOL"),  keytype="GENEID")
-     # are the rownames GENEID ids or geneSymbols
-   potential.matches <- head(rownames(tbl))
-   ensembl.rowname.matches <- length(which(!is.na(unlist(lapply(potential.matches,
-                                                                function(id) match(id, tbl.map$GENEID))))))
-   geneSymbol.rowname.matches <- length(which(!is.na(unlist(lapply(potential.matches,
-                                                                function(id) match(id, tbl.map$SYMBOL))))))
+   potential.matches <- ensg
 
-     # or column 1?
-   potential.matches <- head(tbl[,1])
-   ensembl.column.1.matches <- length(which(!is.na(unlist(lapply(potential.matches,
-                                                                function(id) match(id, tbl.map$GENEID))))))
-   geneSymbol.column.1.matches <- length(which(!is.na(unlist(lapply(potential.matches,
-                                                                function(id) match(id, tbl.map$SYMBOL))))))
+   ensembl.matches <- which(!is.na(unlist(lapply(potential.matches,
+                                                    function(id) match(id, tbl.map$GENEID, nomatch=NA)))))
 
-     # just one of the above can be true: either ensg or symbols in rownames of column 1
-   stopifnot(sum(c(ensembl.rowname.matches, geneSymbol.rowname.matches,
-                   ensembl.column.1.matches, geneSymbol.column.1.matches)) == length(potential.matches))
-   if(ensembl.rowname.matches > 0)
-      return("ensembl rownames")
-   if(geneSymbol.rowname.matches > 0)
-      return("genesymbol rownames")
-   if(ensembl.column.1.matches > 0)
-      return("ensembl column 1")
-   if(geneSymbol.column.1.matches > 0)
-      return("genesymbol column 1")
-
-   stop("failed to categorize data.frame")
-
-   #printf("%d %d %d %d", ensembl.rowname.matches, geneSymbol.rowname.matches,
-   #                      ensembl.column.1.matches, geneSymbol.column.1.matches)
+   browser()
+   stopifnot(length(ensembl.matches) == length(potential.matches))
+   return("ensembl column")
 
 } # .categorizeDataFrame
 #------------------------------------------------------------------------------------------------------------------------
@@ -236,11 +212,16 @@ setMethod('standardizeToGeneSymbolMatrix', 'rnaSeqNormalizer',
    tbl$median <- median
    tbl$sd <- sd
 
-   ensg <- tbl[,1]
+   browser()
+
+   id.column <- grep("ensembl_id", colnames(tbl))
+   ensg <- tbl[, id.column]
+   ensg <- sub("\\..*$", "", ensg)
+
    tbl.map <- select(EnsDb.Hsapiens.v79, key=ensg,  columns=c("SYMBOL"),  keytype="GENEID")
    nas <- which(is.na(tbl.map$SYMBOL))
    stopifnot(length(nas) == 0)
-   indices <- match(tbl[,1], tbl.map$GENEID)
+   indices <- match(ensg, tbl.map$GENEID)
    length(indices)
    head(indices)
    which(is.na(indices))
@@ -248,7 +229,7 @@ setMethod('standardizeToGeneSymbolMatrix', 'rnaSeqNormalizer',
    mapping.failures <- which(is.na(tbl$sym))
 
    if(length(mapping.failures) > 0){
-      tbl$sym[mapping.failures] <- tbl[mapping.failures,1]
+      tbl$sym[mapping.failures] <- tbl[mapping.failures,"ensembl_id"]
       }
 
    dim(tbl)
@@ -264,10 +245,13 @@ setMethod('standardizeToGeneSymbolMatrix', 'rnaSeqNormalizer',
       }
    dim(tbl)
    rownames(tbl) <- tbl$sym
+   geneSymbols <- tbl$sym
 
-   columns.to.delete <- c(1, match(c("mean", "median", "sd", "sym"), colnames(tbl)))
+   columns.to.delete <- c(match(c("ensembl_id", "mean", "median", "sd", "sym"), colnames(tbl)))
    tbl <- tbl[, -columns.to.delete]
    mtx <- as.matrix(tbl)
+   mtx <- mtx[sort(rownames(mtx)),]
+
    return(mtx)
 
 } # .transformEnsemblColumn1DataFrameToGeneSymbolMatrix
