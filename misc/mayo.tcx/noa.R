@@ -34,12 +34,27 @@ cor(mtx.from.noa[g1,], mtx.from.noa[g2,])   # 0.760881
    # apply my understanding of max & michael's transformation of count data
    #-------------------------------------------------------------------------
 
+stopifnot(all(mtx.from.noa >= 0))
 minValue <- min(mtx.from.noa[mtx.from.noa > 0])
-if(minValue == 0)
-  minValue <- .Machine$double.eps
 
-mtx.1 <- mtx.from.noa + minValue
-mtx.2 <- log10(mtx.1)
+if(minValue <= 0){
+  mtx.from.noa <- mtx.from.noa + abs(minValue) + .Machine$double.eps
+  }
+
+mtx.scaled <-  t(scale(t(mtx.from.noa)))
+plot(mtx.scaled[g1,], mtx.scaled[g2,])
+cor(mtx.scaled[g1,], mtx.scaled[g2,])   # 0.76
+
+mtx.log.scaled <- log10(mtx.scaled)
+plot(mtx.log.scaled[g1,], mtx.log.scaled[g2,])
+
+mtx.log <- log10(mtx.from.noa)
+plot(mtx.log[g1,], mtx.log[g2,])
+
+mtx.scaled.log <- t(scale(t(mtx.log)))
+plot(mtx.scaled.log[g1,], mtx.scaled.log[g2,])
+
+mtx.scaled <-  t(scale(t(mtx.2)))
 mtx.log.scaled <- t(scale(t(mtx.2)))
 
 cor(mtx.log.scaled[g1,], mtx.log.scaled[g2,])   # 0.407936
