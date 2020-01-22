@@ -32,6 +32,7 @@ cor(mtx.from.noa[g1,], mtx.from.noa[g2,])   # 0.760881
 
    #------------------------------------------------------------------------
    # apply my understanding of max & michael's transformation of count data
+   # looks like i got it wrong
    #-------------------------------------------------------------------------
 
 stopifnot(all(mtx.from.noa >= 0))
